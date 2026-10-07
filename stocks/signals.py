@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .config import Config
+from .fundamentals import Fundamentals
 from . import indicators as ind
 
 
@@ -37,6 +38,13 @@ class TickerSignal:
     entry: str = ""          # "good time to buy?" verdict label
     entry_note: str = ""     # one-line rationale
     entry_level: str = "neutral"  # good | wait | no | neutral (drives UI colour)
+    # Fundamental / analyst layer (None when unavailable, e.g. ETFs / small caps)
+    analyst_label: str | None = None    # compact "Buy +38%" style summary
+    analyst_level: str = "none"         # buy | hold | sell | none (drives colour)
+    upside_pct: float | None = None     # analyst mean target vs price, %
+    earnings_days: int | None = None    # days to next earnings (risk flag)
+    context: list[SignalComponent] = field(default_factory=list)  # notable fundamental chips
+    fundamentals: dict = field(default_factory=dict)  # raw-ish fields for detail
     error: str | None = None
 
     @property
@@ -173,33 +181,118 @@ def _returns(close: pd.Series) -> dict[str, float]:
     return out
 
 
-def _entry_advice(
-    rsi_now: float, composite: float, uptrend: bool, ret_1d: float, cfg: Config
-) -> tuple[str, str, str]:
-    """Answer 'is it a good time to buy?' from short-term entry timing.
+_RATING_SHORT = {
+    "strong_buy": "Strong Buy", "buy": "Buy", "outperform": "Buy",
+    "hold": "Hold", "neutral": "Hold",
+    "underperform": "Sell", "sell": "Sell", "strong_sell": "Sell",
+}
 
-    Distinct from the overall call: this is about *when* to step in, favouring
-    pullbacks within uptrends and flagging extended/overbought names.
+
+def _analyst_summary(f: Fundamentals | None) -> tuple[str | None, str, float | None]:
+    """Compact analyst read: (label, level, upside_pct). level in buy|hold|sell|none."""
+    if not f or not f.ok or f.target_mean is None or f.upside_pct is None:
+        return (None, "none", None)
+    up = f.upside_pct
+    short = _RATING_SHORT.get(f.rating or "", "")
+    if f.rating in ("strong_buy", "buy", "outperform"):
+        level = "buy"
+    elif f.rating in ("sell", "strong_sell", "underperform"):
+        level = "sell"
+    elif f.rating in ("hold", "neutral"):
+        level = "hold"
+    else:  # thin/no consensus — fall back to the target's implied direction
+        level = "buy" if up >= 5 else ("sell" if up <= -5 else "hold")
+    label = f"{short} {up:+.0f}%".strip() if short else f"{up:+.0f}%"
+    return (label, level, up)
+
+
+def _context_chips(f: Fundamentals | None) -> list[SignalComponent]:
+    """Notable fundamental context as colour-scored chips (kept short to avoid clutter)."""
+    if not f or not f.ok:
+        return []
+    cands: list[tuple[float, SignalComponent]] = []  # (priority, chip)
+
+    if f.earnings_days is not None and 0 <= f.earnings_days <= 12:
+        prio = 100 if f.earnings_days <= 5 else 2
+        word = "today" if f.earnings_days == 0 else f"in {f.earnings_days}d"
+        cands.append((prio, SignalComponent("earnings", 0.0, 0.0, f"earnings {word}")))
+
+    if f.peg is not None and 0 < f.peg < 1:
+        cands.append((5, SignalComponent("peg", 0.4, 0.0, f"PEG {f.peg:.2f} (cheap growth)")))
+    elif f.peg is not None and f.peg > 3.5:
+        cands.append((3, SignalComponent("peg", -0.3, 0.0, f"PEG {f.peg:.1f} (pricey)")))
+
+    # Cap at 300% — larger figures are usually tiny-base artifacts, not signal.
+    if f.revenue_growth is not None and 0.30 <= f.revenue_growth <= 3.0:
+        cands.append((4, SignalComponent("growth", 0.4, 0.0, f"rev +{f.revenue_growth * 100:.0f}%")))
+
+    if f.short_pct_float is not None and f.short_pct_float >= 0.15:
+        cands.append((3, SignalComponent("short", 0.0, 0.0, f"{f.short_pct_float * 100:.0f}% short float")))
+
+    if f.pct_from_high is not None and f.pct_from_high >= -2:
+        cands.append((1, SignalComponent("range", 0.0, 0.0, "at 52w high")))
+    elif f.pct_of_52w_range is not None and f.pct_of_52w_range <= 12:
+        cands.append((1, SignalComponent("range", 0.0, 0.0, "near 52w low")))
+
+    cands.sort(key=lambda x: x[0], reverse=True)
+    return [c for _, c in cands[:3]]
+
+
+def _entry_advice(
+    rsi_now: float, composite: float, uptrend: bool, ret_1d: float,
+    cfg: Config, f: Fundamentals | None, upside_pct: float | None,
+) -> tuple[str, str, str]:
+    """Answer 'is it a good time to buy?' by blending technical timing with the
+    analyst view and an earnings-risk override.
+
     Returns (label, note, level) where level in {good, wait, no, neutral}.
+    Priority: don't-buy-into-earnings > downtrend > overbought > over-target >
+    technical entry.
     """
     p = cfg.indicators
     pulling_back = ret_1d < 0 or rsi_now <= 50
+    ed = f.earnings_days if f else None
 
+    # 1) Binary event risk: earnings within a week is a coin-flip, not an entry.
+    if ed is not None and 0 <= ed <= 5:
+        when = "today" if ed == 0 else f"in {ed}d"
+        return (f"Wait — earnings {when}", "binary event ahead; let it clear first", "wait")
+
+    # 2) Downtrend — direction is wrong regardless of valuation.
     if composite <= cfg.thresholds.sell:
         return ("No — downtrend", "trend is down; wait for a base to form", "no")
+
+    # 3) Overbought — wait for a pullback.
     if rsi_now >= p.rsi_overbought:
         return ("Wait — overbought", "stretched; better entry on a pullback", "wait")
+
+    # 4) Trading well above the analyst mean target — limited room even if up.
+    if upside_pct is not None and upside_pct <= -12:
+        return ("Caution — above targets",
+                f"~{abs(upside_pct):.0f}% over analyst mean target", "wait")
+
+    # 5) Technical entry, enriched with an analyst tailwind when present.
+    tail = ""
+    if upside_pct is not None and upside_pct >= 10:
+        tail = f"; analysts see +{upside_pct:.0f}%"
     if uptrend and pulling_back:
-        return ("Yes — dip buy", "pulling back within an uptrend", "good")
+        return ("Yes — dip buy", "pulling back within an uptrend" + tail, "good")
     if uptrend:
-        return ("Buyable", "healthy uptrend, not overextended", "good")
+        return ("Buyable", "healthy uptrend, not overextended" + tail, "good")
     if composite >= cfg.thresholds.buy:
-        return ("Buyable", "momentum turning up", "good")
+        return ("Buyable", "momentum turning up" + tail, "good")
     return ("Neutral", "no clear edge — wait for confirmation", "neutral")
 
 
-def evaluate(ticker: str, df: pd.DataFrame, cfg: Config) -> TickerSignal:
-    """Compute all indicators and the composite call for one ticker's history."""
+def evaluate(
+    ticker: str, df: pd.DataFrame, cfg: Config,
+    fundamentals: Fundamentals | None = None,
+) -> TickerSignal:
+    """Compute indicators + composite call, blended with analyst/earnings data.
+
+    `fundamentals` is optional: when None (e.g. in offline tests) the result is a
+    pure-technical read. The engine supplies it in normal runs.
+    """
     p = cfg.indicators
     close = df["Close"]
 
@@ -228,10 +321,17 @@ def evaluate(ticker: str, df: pd.DataFrame, cfg: Config) -> TickerSignal:
     spark = [round(float(x), 4) for x in close.tail(30)]
     returns = _returns(close)
 
+    analyst_label, analyst_level, upside_pct = _analyst_summary(fundamentals)
+    context = _context_chips(fundamentals)
+
     uptrend = float(fast_sma.iloc[-1]) > float(slow_sma.iloc[-1])
     entry, entry_note, entry_level = _entry_advice(
-        rsi_now, composite, uptrend, returns.get("1d", change_pct), cfg
+        rsi_now, composite, uptrend, returns.get("1d", change_pct),
+        cfg, fundamentals, upside_pct,
     )
+
+    from dataclasses import asdict as _asdict
+    fund_dict = _asdict(fundamentals) if fundamentals and fundamentals.ok else {}
 
     return TickerSignal(
         ticker=ticker,
@@ -246,4 +346,10 @@ def evaluate(ticker: str, df: pd.DataFrame, cfg: Config) -> TickerSignal:
         entry=entry,
         entry_note=entry_note,
         entry_level=entry_level,
+        analyst_label=analyst_label,
+        analyst_level=analyst_level,
+        upside_pct=round(upside_pct, 1) if upside_pct is not None else None,
+        earnings_days=fundamentals.earnings_days if fundamentals else None,
+        context=context,
+        fundamentals=fund_dict,
     )

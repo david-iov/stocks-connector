@@ -28,7 +28,7 @@ watchlists:
     - QTUM    # Defiance Quantum ETF (basket benchmark)
     - QMCO    # Quantum Corp — data STORAGE/tape, NOT quantum computing (name only)
 
-  # Broader tech: semis, software, platforms, AI infra.
+  # Broader tech: semis, semi-equipment, software, platforms.
   tech:
     - AVGO    # Broadcom
     - TSM     # Taiwan Semiconductor
@@ -39,17 +39,56 @@ watchlists:
     - ARM     # Arm Holdings
     - SMCI    # Super Micro
     - MRVL    # Marvell
+    - LRCX    # Lam Research (semi equipment)
+    - AMAT    # Applied Materials (semi equipment)
+    - KLAC    # KLA (semi equipment)
+    - TXN     # Texas Instruments
+    - ADI     # Analog Devices
+    - NXPI    # NXP Semiconductors
+    - "ON"    # ON Semiconductor (quoted — YAML reads bare ON as boolean true)
+    - MCHP    # Microchip
     - PLTR    # Palantir
     - CRM     # Salesforce
     - ADBE    # Adobe
     - NFLX    # Netflix
     - CRWD    # CrowdStrike
     - PANW    # Palo Alto Networks
+    - ZS      # Zscaler
     - NET     # Cloudflare
     - SNOW    # Snowflake
+    - MDB     # MongoDB
+    - DDOG    # Datadog
+    - NOW     # ServiceNow
+    - WDAY    # Workday
+    - TEAM    # Atlassian
+    - ORCL    # Oracle
+    - CSCO    # Cisco
+    - IBM     # IBM
     - SHOP    # Shopify
     - UBER    # Uber
     - COIN    # Coinbase
+
+  # AI exposure: AI-infra chips/hardware, AI platforms, and AI-narrative
+  # small caps (some cheap, high-beta "doubler" candidates — high risk).
+  ai:
+    - NVDA    # Nvidia (AI GPUs)
+    - AMD     # AMD
+    - AVGO    # Broadcom (AI networking/custom silicon)
+    - TSM     # TSMC (fabs the AI chips)
+    - MU      # Micron (HBM memory for AI)
+    - SMCI    # Super Micro (AI servers)
+    - ANET    # Arista (AI datacenter networking)
+    - DELL    # Dell (AI servers)
+    - VRT      # Vertiv (AI datacenter cooling/power)
+    - MSFT    # Microsoft (Copilot / OpenAI)
+    - GOOGL   # Alphabet (Gemini)
+    - META    # Meta (Llama / AI capex)
+    - AMZN    # Amazon (AWS AI)
+    - PLTR    # Palantir (AI analytics)
+    - AI      # C3.ai
+    - BBAI    # BigBear.ai
+    - SOUN    # SoundHound AI
+    - PATH    # UiPath
 
 # Which group to scan when none is passed on the CLI. "all" = union of groups.
 default_group: all

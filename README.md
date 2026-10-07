@@ -69,9 +69,19 @@ by default:
   LAES) plus the QTUM ETF as a basket benchmark. Mostly low-priced, high-beta
   small caps — fast movers, high risk. (QMCO is Quantum *Corp* — storage, not
   quantum computing — included by request and labeled as such.)
-- **tech** — broader tech: semis (AVGO, TSM, ASML, MU, QCOM, INTC, ARM, SMCI,
-  MRVL), software & platforms (PLTR, CRM, ADBE, NFLX, CRWD, PANW, NET, SNOW,
-  SHOP, UBER, COIN).
+- **tech** — broad tech: semis & semi-equipment (AVGO, TSM, ASML, MU, QCOM,
+  INTC, ARM, SMCI, MRVL, LRCX, AMAT, KLAC, TXN, ADI, NXPI, ON, MCHP) and
+  software/platforms (PLTR, CRM, ADBE, NFLX, CRWD, PANW, ZS, NET, SNOW, MDB,
+  DDOG, NOW, WDAY, TEAM, ORCL, CSCO, IBM, SHOP, UBER, COIN).
+- **ai** — AI exposure: infra chips/hardware (NVDA, AMD, AVGO, TSM, MU, SMCI,
+  ANET, DELL, VRT), hyperscalers (MSFT, GOOGL, META, AMZN), and AI-narrative
+  small caps (PLTR, AI, BBAI, SOUN, PATH — some cheap, high-beta "doublers").
+
+> **Data source note:** technicals come from Yahoo price history; the analyst,
+> earnings, valuation and short-interest fields come from Yahoo's `.info`
+> endpoint, which can be **stale or sparse** — especially on small caps (few
+> analysts) and ETFs (no coverage at all). Treat the fundamental layer as
+> context, not gospel.
 
 Pick one with `-g NAME`, or use `all` (the default) to scan every group. Add your
 own groups by editing `watchlists:` in `config.yaml`.
@@ -96,19 +106,25 @@ An auto-refreshing page shows the ranked calls with, per row:
   days), color-coded green/red.
 - A **Trend sparkline** (green if the last close is above the window's first).
 - **Signal** — the BUY/SELL pill with its composite score and RSI underneath.
-- **Good to buy?** — a short-term *entry-timing* read, distinct from the overall
-  call: `Yes — dip buy` (pullback within an uptrend), `Buyable`, `Wait —
-  overbought`, or `No — downtrend`, each with a one-line rationale.
-- **What's driving it** — color-coded factor chips (green bullish, red bearish,
-  gray neutral) so you can see which signals push the score up vs down.
+- **Analyst** — Wall-St consensus rating + mean price-target **upside %** (e.g.
+  `Strong Buy +38%`). Blank for ETFs / names with no coverage.
+- **Good to buy?** — a short-term *entry-timing* read that **blends technicals
+  with the analyst view and an earnings-risk override**: `Wait — earnings in 3d`
+  (binary event ahead), `No — downtrend`, `Wait — overbought`, `Caution — above
+  targets` (price over analyst mean), `Yes — dip buy`, or `Buyable` — each with a
+  one-line rationale that cites the supporting data.
+- **What's driving it** — color-coded chips: solid = technical drivers (green
+  bullish / red bearish / gray neutral), **dashed = fundamental context**
+  (analyst upside, `earnings in Nd`, `32% short float`, `PEG 0.29`, `rev +106%`,
+  `near 52w low`). Kept to the top few so it stays uncluttered.
+- An **`ER Nd`** badge appears on the ticker when earnings are within ~10 days.
 
-The header shows **market breadth** — how many names are down today and how many
-are flagged buyable. A **group** dropdown (core / quantum / tech / all)
-and a **max $** box let you filter live — e.g. pick `quantum` and set max $ to 10
-to see only cheap quantum names. It uses the same config as the CLI. Signals are
-cached for 90s server-side, so browser refreshes won't re-hit Yahoo on every
-poll; the page auto-polls every 60s (toggle off with the checkbox) and "Refresh
-now" forces a fresh fetch.
+**Quick-filters** above the table one-tap narrow the list — **All**, ⭐ **Strong
+buy**, **Buy+**, ✅ **Good entry**, ▼ **Down today** — each showing a live count.
+The header shows **market breadth** (how many names are down, how many strong
+buys). A **group** dropdown (core / quantum / tech / ai / all) and a **max $** box
+filter further — e.g. `ai` + max $ 15 for cheap AI names. The whole page is
+**mobile-responsive**: the table collapses into stacked cards on phones.
 
 ## Data & freshness
 

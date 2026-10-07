@@ -31,12 +31,22 @@
            border: 1px solid #2b3443; padding: 8px 9px; border-radius: 8px; font-size: 14px; }
   label.ctl { color: var(--dim); font-size: 13px; display: flex; gap: 6px; align-items: center; }
   main { padding: 16px 20px 56px; }
+  /* quick filters */
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+  .qf { background: #141a23; color: var(--dim); border: 1px solid var(--line);
+        padding: 7px 13px; border-radius: 999px; font-size: 13px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 6px; }
+  .qf .n { font-size: 11px; color: var(--ink); background: #222c38;
+           border-radius: 999px; padding: 1px 7px; }
+  .qf.on { color: var(--ink); border-color: #3b4a5e; background: #1d2430; }
+  .qf.on.sb { border-color: #1f6f3b; background: #0f2e1b; color: #45d268; }
+  .qf.on.sb .n { background: #15532b; }
   .legend { color: var(--dim); font-size: 12.5px; display: flex; align-items: center;
             gap: 14px; flex-wrap: wrap; margin: 0 0 12px; }
   .legend .grp { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px;
                background: var(--panel); -webkit-overflow-scrolling: touch; }
-  table { border-collapse: collapse; width: 100%; min-width: 980px; }
+  table { border-collapse: collapse; width: 100%; min-width: 1040px; }
   thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
   th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line);
            white-space: nowrap; }
@@ -45,7 +55,9 @@
   th { color: var(--dim); font-weight: 600; font-size: 11px; text-transform: uppercase;
        letter-spacing: .05em; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .ticker { font-weight: 700; font-size: 15px; }
+  .ticker { font-weight: 700; font-size: 15px; display: inline-flex; align-items: center; gap: 7px; }
+  .erflag { font-size: 10.5px; font-weight: 700; color: #d7a422; background: #2a2410;
+            border: 1px solid #5c4a12; border-radius: 5px; padding: 1px 5px; letter-spacing: .02em; }
   .price { font-variant-numeric: tabular-nums; }
   .ret { font-variant-numeric: tabular-nums; font-size: 13px; }
   .up { color: var(--green); } .down { color: var(--red); } .zero { color: var(--dim); }
@@ -59,22 +71,29 @@
   .HOLD      { background: #2a2410; color: #d7a422; }
   .SELL      { background: #2a1416; color: #f17b74; }
   .STRONGSELL{ background: #2a1416; color: #f17b74; border: 1px solid #a33; }
+  /* analyst */
+  .ana { display: inline-flex; flex-direction: column; gap: 1px; }
+  .ana .rt { font-size: 12.5px; font-weight: 600; }
+  .ana .ct { font-size: 10.5px; color: var(--dim); }
+  .ana.buy .rt { color: #45d268; } .ana.sell .rt { color: #f17b74; }
+  .ana.hold .rt { color: #d7a422; } .ana.none .rt { color: var(--dim); font-weight: 400; }
   .entry { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px;
            border-radius: 8px; font-size: 12.5px; font-weight: 600; }
   .entrywrap { display: flex; flex-direction: column; gap: 2px; }
   .entrywrap small { font-weight: 400; font-size: 11px; color: var(--dim);
-                     white-space: normal; max-width: 180px; }
+                     white-space: normal; max-width: 210px; }
   .e-good { background: #0f2419; color: #56d364; }
   .e-wait { background: #2a2410; color: #d7a422; }
   .e-no   { background: #2a1416; color: #f17b74; }
   .e-neutral { background: #1c2128; color: var(--dim); }
-  .factors { display: flex; flex-wrap: wrap; gap: 5px; max-width: 440px; white-space: normal; }
+  .factors { display: flex; flex-wrap: wrap; gap: 5px; max-width: 420px; white-space: normal; }
   .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
           border-radius: 999px; font-size: 12px; border: 1px solid transparent; }
   .chip .ar { font-size: 10px; }
   .chip.bull { background: #11261a; color: #56d364; border-color: #1a3b26; }
   .chip.bear { background: #2a1416; color: #f17b74; border-color: #42191c; }
   .chip.flat { background: #1c2128; color: var(--dim); border-color: #2a2f37; }
+  .chip.ctx { border-style: dashed; }   /* fundamental context, visually distinct */
   .err { color: var(--dim); font-style: italic; }
   .disclaimer { color: #6e7681; font-size: 12px; margin-top: 22px; max-width: 820px; }
   .spin { opacity: .45; transition: opacity .2s; }
@@ -86,6 +105,8 @@
     .controls { margin-left: 0; width: 100%; }
     .controls label.ctl, .controls button { flex: 1; justify-content: center; }
     main { padding: 14px 14px 48px; }
+    .quick { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+    .qf { flex: 0 0 auto; }
     .tablewrap { border: none; border-radius: 0; background: transparent; overflow: visible; }
     table, tbody, tr, td { display: block; width: 100%; }
     table { min-width: 0; }
@@ -95,7 +116,6 @@
     tbody tr:hover { background: var(--panel); }
     td { border: none; padding: 5px 0; white-space: normal;
          display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    /* label each cell using the header text we stash in data-label */
     td::before { content: attr(data-label); color: var(--dim); font-size: 11px;
                  text-transform: uppercase; letter-spacing: .05em; font-weight: 600;
                  flex: 0 0 auto; }
@@ -109,6 +129,7 @@
     .factors { max-width: none; }
     .entrywrap small { max-width: none; }
     .call { flex-direction: row; align-items: center; gap: 8px; }
+    .ana { flex-direction: row; align-items: baseline; gap: 6px; }
   }
 </style>
 </head>
@@ -127,34 +148,39 @@
   </div>
 </header>
 <main>
+  <div class="quick" id="quick">
+    <span class="qf on" data-f="all">All <span class="n" id="n-all">0</span></span>
+    <span class="qf sb" data-f="strongbuy">⭐ Strong buy <span class="n" id="n-strongbuy">0</span></span>
+    <span class="qf" data-f="buy">Buy+ <span class="n" id="n-buy">0</span></span>
+    <span class="qf" data-f="goodentry">✅ Good entry <span class="n" id="n-goodentry">0</span></span>
+    <span class="qf" data-f="down">▼ Down today <span class="n" id="n-down">0</span></span>
+  </div>
   <div class="legend">
     <span class="grp">Drivers:
       <span class="chip bull"><span class="ar">▲</span>bullish</span>
       <span class="chip bear"><span class="ar">▼</span>bearish</span>
-      <span class="chip flat"><span class="ar">•</span>neutral</span></span>
-    <span class="grp">Good to buy?:
-      <span class="entry e-good">Yes</span>
-      <span class="entry e-wait">Wait</span>
-      <span class="entry e-no">No</span></span>
-    <span>Returns = price change over 1 / 7 / 30 calendar days.</span>
+      <span class="chip flat"><span class="ar">•</span>neutral</span>
+      <span class="chip flat ctx">dashed = fundamentals</span></span>
+    <span class="grp">Analyst = Wall-St rating + mean price-target upside.</span>
   </div>
   <div class="tablewrap">
   <table>
     <thead><tr>
       <th>Ticker</th><th class="num">Price</th>
       <th class="num">1D</th><th class="num">7D</th><th class="num">30D</th>
-      <th>Trend</th><th>Signal</th><th>Good to buy?</th><th>What's driving it</th>
+      <th>Trend</th><th>Signal</th><th>Analyst</th><th>Good to buy?</th><th>What's driving it</th>
     </tr></thead>
     <tbody id="rows"><tr><td>Loading signals…</td></tr></tbody>
   </table>
   </div>
   <p class="disclaimer">Educational signal output — <b>not financial advice</b>.
-  "Good to buy?" is a short-term technical entry read, not a recommendation; signals
-  are noisy, backward-looking, and Yahoo-delayed ~15 min. Do your own research and
-  manage risk.</p>
+  "Good to buy?" blends short-term technicals with analyst targets and earnings
+  timing; it is not a recommendation. Data is Yahoo-delayed ~15 min, analyst/
+  fundamental fields can be stale or sparse (esp. small caps). Do your own research.</p>
 </main>
 <script>
-  let DATA = null;  // the whole signals.json, loaded once
+  let DATA = null;          // the whole signals.json, loaded once
+  let FILTER = 'all';       // active quick-filter
   const fmtTime = ts => new Date(ts * 1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   const pillClass = a => a.replace(/\s+/g, '');
 
@@ -182,13 +208,25 @@
         stroke-linejoin="round" stroke-linecap="round" points="${pts}"/>
       <circle cx="${last[0]}" cy="${last[1]}" r="2" fill="${color}"/></svg>`;
   }
-  function chips(factors) {
+  function chip(f, ctx) {
     const T = 0.3;  // mild leans stay neutral so colour matches the wording
-    return '<div class="factors">' + factors.map(f => {
-      const cls = f.score > T ? 'bull' : (f.score < -T ? 'bear' : 'flat');
-      const ar = f.score > T ? '▲' : (f.score < -T ? '▼' : '•');
-      return `<span class="chip ${cls}"><span class="ar">${ar}</span>${f.reason}</span>`;
-    }).join('') + '</div>';
+    const cls = f.score > T ? 'bull' : (f.score < -T ? 'bear' : 'flat');
+    const ar = f.score > T ? '▲' : (f.score < -T ? '▼' : '•');
+    return `<span class="chip ${cls}${ctx ? ' ctx' : ''}"><span class="ar">${ar}</span>${f.reason}</span>`;
+  }
+  function chips(factors, context) {
+    // Keep it uncrowded: top 3 technical drivers + up to 2 fundamental chips.
+    const tech = (factors || []).slice(0, 3).map(f => chip(f, false));
+    const ctx = (context || []).slice(0, 2).map(f => chip(f, true));
+    return `<div class="factors">${tech.join('')}${ctx.join('')}</div>`;
+  }
+  function analyst(r) {
+    if (!r.analyst_label) return '<span class="ana none"><span class="rt">—</span></span>';
+    return `<span class="ana ${r.analyst_level}"><span class="rt">${r.analyst_label}</span></span>`;
+  }
+  function erFlag(d) {
+    if (d === null || d === undefined || d < 0 || d > 10) return '';
+    return `<span class="erflag" title="earnings in ${d} days">ER ${d}d</span>`;
   }
   function row(r) {
     if (r.error) {
@@ -197,23 +235,49 @@
     }
     const ret = r.returns || {};
     return `<tr>
-      <td class="c-ticker"><span class="ticker">${r.ticker}</span></td>
+      <td class="c-ticker"><span class="ticker">${r.ticker}${erFlag(r.earnings_days)}</span></td>
       <td class="num price" data-label="Price">$${r.price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       ${retCell('1D', ret['1d'])}${retCell('7D', ret['7d'])}${retCell('30D', ret['30d'])}
       <td class="spark" data-label="Trend">${spark(r.spark)}</td>
       <td data-label="Signal"><div class="call"><span class="pill ${pillClass(r.action)}">${r.action}</span>
         <span class="score">score ${r.composite >= 0 ? '+' : ''}${r.composite.toFixed(2)} · RSI ${isNaN(r.rsi)?'–':r.rsi.toFixed(0)}</span></div></td>
+      <td data-label="Analyst">${analyst(r)}</td>
       <td data-label="Good to buy?"><div class="entrywrap"><span class="entry e-${r.entry_level}">${r.entry}</span>
         <small>${r.entry_note}</small></div></td>
-      <td class="c-factors">${chips(r.factors)}</td>
+      <td class="c-factors">${chips(r.factors, r.context)}</td>
     </tr>`;
   }
-  function renderBreadth(rows) {
-    const priced = rows.filter(r => !r.error && r.returns && r.returns['1d'] !== undefined);
+  const MATCH = {
+    all: () => true,
+    strongbuy: r => r.action === 'STRONG BUY',
+    buy: r => r.action === 'BUY' || r.action === 'STRONG BUY',
+    goodentry: r => r.entry_level === 'good',
+    down: r => r.returns && r.returns['1d'] < 0,
+  };
+  function groupAndPriceRows() {
+    if (!DATA) return [];
+    const g = document.getElementById('group').value;
+    const mp = parseFloat(document.getElementById('maxprice').value);
+    let rows = DATA.rows.filter(r => !r.error);
+    if (g && g !== 'all' && DATA.groups[g]) {
+      const members = new Set(DATA.groups[g]);
+      rows = rows.filter(r => members.has(r.ticker));
+    }
+    if (!isNaN(mp)) rows = rows.filter(r => r.price <= mp);
+    return rows;
+  }
+  function updateCounts(base) {
+    for (const k of Object.keys(MATCH)) {
+      const el = document.getElementById('n-' + k);
+      if (el) el.textContent = base.filter(MATCH[k]).length;
+    }
+  }
+  function renderBreadth(base) {
+    const priced = base.filter(r => r.returns && r.returns['1d'] !== undefined);
     const down = priced.filter(r => r.returns['1d'] < 0).length;
     const upN = priced.filter(r => r.returns['1d'] > 0).length;
     const n = priced.length || 1;
-    const buys = rows.filter(r => !r.error && r.entry_level === 'good').length;
+    const sb = base.filter(MATCH.strongbuy).length;
     const pctDown = Math.round(100 * down / n);
     const tone = down > upN ? 'down' : (upN > down ? 'up' : 'zero');
     const when = DATA ? fmtTime(DATA.updated_at) : '';
@@ -221,34 +285,22 @@
       `<span class="bar"><i style="width:${100-pctDown}%;background:var(--green)"></i>` +
       `<i style="width:${pctDown}%;background:var(--red)"></i></span>` +
       `<span class="${tone}"><b>${down}/${n}</b> down</span>` +
-      `<span>· <b>${buys}</b> buyable</span>` +
+      `<span>· <b>${sb}</b> strong buys</span>` +
       `<span>· ${when}</span>`;
   }
-  function currentRows() {
-    if (!DATA) return [];
-    const g = document.getElementById('group').value;
-    const mp = parseFloat(document.getElementById('maxprice').value);
-    let rows = DATA.rows;
-    if (g && g !== 'all' && DATA.groups[g]) {
-      const members = new Set(DATA.groups[g]);
-      rows = rows.filter(r => members.has(r.ticker));
-    }
-    if (!isNaN(mp)) rows = rows.filter(r => r.error || r.price <= mp);
-    return rows;
-  }
   function render() {
-    const rows = currentRows();
+    const base = groupAndPriceRows();       // group + price (not the quick-filter)
+    updateCounts(base);
+    renderBreadth(base);
+    const rows = base.filter(MATCH[FILTER] || MATCH.all);
     document.getElementById('rows').innerHTML = rows.map(row).join('') ||
-      '<tr><td class="err">No stocks match this filter.</td></tr>';
-    renderBreadth(rows);
+      '<tr><td class="err">Nothing matches this filter.</td></tr>';
   }
   async function loadData() {
     document.querySelector('table').classList.add('spin');
     try {
-      // cache-bust so a phone doesn't show a stale snapshot
       const res = await fetch('./signals.json?t=' + Math.floor(Date.now() / 60000));
       DATA = await res.json();
-      // populate the group dropdown once
       const sel = document.getElementById('group');
       if (!sel.options.length) {
         ['all', ...Object.keys(DATA.groups)].forEach(g => {
@@ -262,11 +314,17 @@
       document.querySelector('table').classList.remove('spin');
     }
   }
+  // quick-filter clicks
+  document.getElementById('quick').addEventListener('click', e => {
+    const el = e.target.closest('.qf'); if (!el) return;
+    FILTER = el.dataset.f;
+    document.querySelectorAll('.qf').forEach(q => q.classList.toggle('on', q === el));
+    render();
+  });
   document.getElementById('refresh').onclick = loadData;
   document.getElementById('group').onchange = render;
   document.getElementById('maxprice').oninput = render;
   loadData();
-  // Pages data is rebuilt every ~15 min; re-pull periodically in case the tab stays open.
   setInterval(loadData, 5 * 60 * 1000);
 </script>
 </body>

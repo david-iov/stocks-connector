@@ -12,17 +12,20 @@ from .signals import TickerSignal
 
 
 def signal_to_row(s: TickerSignal) -> dict:
-    """One ranked row: price, returns, call, entry advice, and factor chips."""
+    """One ranked row: price, returns, call, entry advice, analyst view, chips."""
     d = asdict(s)
     if s.is_error:
         d["factors"] = []
+        d["context"] = []
         d["why"] = s.error
     else:
         # Each factor keeps its signed score so the UI can colour by direction.
-        # Strongest-magnitude drivers first.
+        # Strongest-magnitude technical drivers first.
         ordered = sorted(s.components, key=lambda c: abs(c.weighted), reverse=True)
         d["factors"] = [{"reason": c.reason, "score": round(c.score, 3)} for c in ordered]
+        d["context"] = [{"reason": c.reason, "score": round(c.score, 3)} for c in s.context]
         d["why"] = "; ".join(c.reason for c in ordered[:3])
-    # The raw component dataclasses aren't needed client-side; drop to keep JSON small.
+    # Raw dataclasses / bulky fundamentals blob aren't needed client-side.
     d.pop("components", None)
+    d.pop("fundamentals", None)
     return d

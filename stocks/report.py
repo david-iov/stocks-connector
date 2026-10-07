@@ -18,6 +18,7 @@ _ACTION_STYLE = {
 
 
 _ENTRY_STYLE = {"good": "green", "wait": "yellow", "no": "red", "neutral": "dim"}
+_ANALYST_STYLE = {"buy": "green", "hold": "yellow", "sell": "red", "none": "dim"}
 
 
 def _fmt_ret(x: float | None) -> str:
@@ -43,6 +44,7 @@ def render(signals: list[TickerSignal], console: Console | None = None) -> None:
     table.add_column("30D", justify="right")
     table.add_column("RSI", justify="right")
     table.add_column("Call")
+    table.add_column("Analyst")
     table.add_column("Good to buy?")
     table.add_column("Why", style="dim", overflow="fold")
 
@@ -52,6 +54,8 @@ def render(signals: list[TickerSignal], console: Console | None = None) -> None:
     for s in ok:
         style = _ACTION_STYLE.get(s.action, "white")
         estyle = _ENTRY_STYLE.get(s.entry_level, "white")
+        astyle = _ANALYST_STYLE.get(s.analyst_level, "dim")
+        analyst = f"[{astyle}]{s.analyst_label}[/{astyle}]" if s.analyst_label else "[dim]–[/dim]"
         # Lead with the strongest-magnitude reasons.
         reasons = sorted(s.components, key=lambda c: abs(c.weighted), reverse=True)
         why = ", ".join(c.reason for c in reasons[:3])
@@ -63,6 +67,7 @@ def render(signals: list[TickerSignal], console: Console | None = None) -> None:
             _fmt_ret(s.returns.get("30d")),
             f"{s.rsi:.0f}",
             f"[{style}]{s.action}[/{style}]",
+            analyst,
             f"[{estyle}]{s.entry}[/{estyle}]",
             why,
         )

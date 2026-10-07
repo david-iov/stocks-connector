@@ -5,7 +5,11 @@ import pandas as pd
 
 from stocks import indicators as ind
 from stocks.config import Config
+from stocks.fundamentals import Fundamentals
 from stocks.signals import evaluate
+
+# A steady uptrend that ends with a small pullback (dip-buy setup).
+_UPTREND = list(np.linspace(100, 160, 105)) + list(np.linspace(160, 150, 15))
 
 
 def _make_df(closes, volumes=None):
@@ -72,6 +76,39 @@ def test_entry_advice_downtrend_is_no():
     sig = evaluate("DN", _make_df(closes), Config())
     assert sig.entry_level == "no"
     assert sig.entry.startswith("No")
+
+
+def test_earnings_override_blocks_entry():
+    # Bullish dip-buy setup, but earnings in 3 days -> Wait (don't buy the event).
+    f = Fundamentals(ok=True, earnings_days=3)
+    sig = evaluate("ER", _make_df(_UPTREND), Config(), f)
+    assert sig.entry_level == "wait"
+    assert sig.entry.startswith("Wait — earnings")
+
+
+def test_overvalued_caution_above_targets():
+    # Uptrend, but trading ~25% above the analyst mean target -> caution.
+    price = _UPTREND[-1]
+    f = Fundamentals(ok=True, target_mean=price * 0.8, upside_pct=-20.0)
+    sig = evaluate("OV", _make_df(_UPTREND), Config(), f)
+    assert sig.entry_level == "wait"
+    assert "target" in sig.entry_note
+
+
+def test_analyst_tailwind_in_note():
+    price = _UPTREND[-1]
+    f = Fundamentals(ok=True, rating="buy", num_analysts=20,
+                     target_mean=price * 1.3, upside_pct=30.0)
+    sig = evaluate("UP", _make_df(_UPTREND), Config(), f)
+    assert sig.entry_level == "good"
+    assert "analysts see +30%" in sig.entry_note
+    assert sig.analyst_label == "Buy +30%"
+
+
+def test_no_fundamentals_is_pure_technical():
+    sig = evaluate("T", _make_df(_UPTREND), Config(), None)
+    assert sig.analyst_label is None
+    assert sig.context == []
 
 
 def test_resolve_group_all_is_deduped_union():
