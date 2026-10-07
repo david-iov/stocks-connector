@@ -1,0 +1,15 @@
+# Render Blueprint — deploys the dashboard as a free web service.
+# In Render: New + → Blueprint → connect this repo → it reads this file.
+services:
+  - type: web
+    name: stocks-connector
+    runtime: python
+    plan: free
+    # 1 worker keeps the in-memory signal cache shared; threads handle
+    # concurrent requests while one fetch is in flight.
+    startCommand: gunicorn stocks.web:app --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.0"
+      - key: CACHE_TTL_SECONDS
+        value: "300"   # 5 min — intraday bars update every 15 min; eases Yahoo rate limits

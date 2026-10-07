@@ -1,0 +1,93 @@
+# Stocks connector configuration
+#
+# Tickers the connector watches, organised into named groups (Yahoo symbols).
+# Pick one with `-g/--group NAME`, or use the special group "all" (the default)
+# to scan every group at once. Filter to cheap names with `--max-price N`.
+watchlists:
+  # Large-cap momentum names.
+  core:
+    - AAPL
+    - MSFT
+    - NVDA
+    - TSLA
+    - AMD
+    - AMZN
+    - META
+    - GOOGL
+    - SPY
+
+  # Quantum-computing pure-plays + a quantum ETF benchmark (QTUM).
+  # Most of these are low-priced, high-beta small caps — fast movers, high risk.
+  quantum:
+    - IONQ    # IonQ
+    - RGTI    # Rigetti
+    - QBTS    # D-Wave Quantum
+    - QUBT    # Quantum Computing Inc
+    - ARQQ    # Arqit Quantum
+    - LAES    # SEALSQ (post-quantum crypto)
+    - QTUM    # Defiance Quantum ETF (basket benchmark)
+    - QMCO    # Quantum Corp — data STORAGE/tape, NOT quantum computing (name only)
+
+  # Broader tech: semis, software, platforms, AI infra.
+  tech:
+    - AVGO    # Broadcom
+    - TSM     # Taiwan Semiconductor
+    - ASML    # ASML (chip litho)
+    - MU      # Micron
+    - QCOM    # Qualcomm
+    - INTC    # Intel
+    - ARM     # Arm Holdings
+    - SMCI    # Super Micro
+    - MRVL    # Marvell
+    - PLTR    # Palantir
+    - CRM     # Salesforce
+    - ADBE    # Adobe
+    - NFLX    # Netflix
+    - CRWD    # CrowdStrike
+    - PANW    # Palo Alto Networks
+    - NET     # Cloudflare
+    - SNOW    # Snowflake
+    - SHOP    # Shopify
+    - UBER    # Uber
+    - COIN    # Coinbase
+
+# Which group to scan when none is passed on the CLI. "all" = union of groups.
+default_group: all
+
+# How much history to pull and at what granularity.
+# interval: 1d, 1h, 30m, 15m, 5m ...
+# For intraday intervals the period is auto-clamped to Yahoo's limit (~60d for
+# 15m), so you don't have to match them by hand. Indicators are computed on
+# these bars — on 15m, "RSI(14)" is a 14-bar (~3.5h) intraday reading.
+# Data is Yahoo-delayed ~15 min; this is a short-term view, not a live feed.
+history_period: "60d"
+interval: "15m"
+
+# Indicator parameters (classic short-term momentum defaults).
+indicators:
+  rsi_period: 14
+  rsi_oversold: 30
+  rsi_overbought: 70
+  macd_fast: 12
+  macd_slow: 26
+  macd_signal: 9
+  sma_fast: 20
+  sma_slow: 50
+  volume_lookback: 20
+  volume_spike_mult: 1.5   # today's volume vs avg to count as a spike
+
+# Weights applied to each signal when building the composite score.
+# Positive weight => bullish contribution, scaled by signal strength [-1, 1].
+weights:
+  rsi: 1.0
+  macd: 1.2
+  ma_cross: 1.0
+  trend: 0.8
+  volume: 0.6
+
+# Score thresholds that map the composite score to an action label.
+thresholds:
+  strong_buy: 1.5
+  buy: 0.5
+  sell: -0.5
+  strong_sell: -1.5
