@@ -120,26 +120,38 @@ default interval is **15-minute bars** (`config.yaml`), auto-clamped to Yahoo's
 not an intraday day-trading feed. For end-of-day signals instead, set
 `interval: 1d` and `history_period: 6mo`.
 
-## Deploying (free, on Render)
+## Deploying (free, no credit card — GitHub Pages)
 
-The app is a standard WSGI Flask server, so it runs on any free "web service"
-host. Render's free tier is the easy path:
+The primary hosted setup needs **no server and no card**: a scheduled GitHub
+Action rebuilds the data, and GitHub Pages serves a static dashboard.
 
-1. Push this project to a GitHub repo.
-2. In Render: **New + → Blueprint**, connect the repo. It reads `render.yaml`
-   and provisions the service (gunicorn, Python 3.13, 5-min cache).
-3. First build takes a few minutes; you get a `*.onrender.com` URL.
+How it works:
+- `build_static.py` evaluates every group once and writes `docs/signals.json`.
+- `docs/index.html` is a static, **mobile-friendly** page that fetches that JSON
+  and filters by group / price **client-side** — no backend.
+- `.github/workflows/update.yml` runs `build_static.py` on a cron (every 15 min
+  during US market hours) and commits the refreshed `signals.json`.
 
-Notes:
-- The free tier **spins down after ~15 min idle**; the next visit cold-starts in
-  ~30–50s, then is fast again.
-- `gunicorn stocks.web:app` is the start command (also in the `Procfile`). It
-  reads `$PORT` and `$CACHE_TTL_SECONDS` from the environment automatically.
-- **Caveat:** Yahoo sometimes rate-limits cloud/datacenter IPs. Per-ticker fetch
-  failures degrade gracefully (that row shows an error, others still load), and
-  the longer cache reduces request volume — but a hosted instance can be flakier
-  than running locally. If it becomes a problem, switch the data layer to a
-  keyed provider (Finnhub/Polygon).
+One-time setup:
+1. In the repo: **Settings → Pages → Build and deployment → Source: Deploy from a
+   branch**, pick `main` and the **`/docs`** folder, Save.
+2. The site appears at `https://<user>.github.io/<repo>/` within a minute.
+3. (Optional) Actions tab → **Refresh signals → Run workflow** to populate data
+   immediately instead of waiting for the next cron tick.
+
+Tradeoff: the dashboard shows the **last cron snapshot** (≤15 min old), not an
+on-demand fetch. Fetching runs on GitHub's infrastructure, which sidesteps the
+serverless timeouts and keeps your machine out of it.
+
+### Alternative: a live server (Render / Railway / Fly)
+
+For an on-demand live app instead of snapshots, the Flask server also deploys to
+any "web service" host via the included `render.yaml` / `Procfile` (start command
+`gunicorn stocks.web:app`, reads `$PORT` and `$CACHE_TTL_SECONDS`). Note most of
+these now **require a card on file** even on their free tiers, and Yahoo may
+rate-limit cloud IPs — per-ticker failures degrade gracefully, but a hosted
+instance can be flakier than local. Swap to a keyed provider (Finnhub/Polygon) if
+that bites.
 
 ## Configuration
 
@@ -159,16 +171,23 @@ To get a report on a schedule, drop a cron entry pointing at the venv Python:
 
 ```
 config.yaml          # watchlist + tunable parameters
-render.yaml          # Render deploy blueprint
-Procfile             # start command for Render/Railway/Heroku-style hosts
+render.yaml          # live-server deploy blueprint (optional)
+Procfile             # start command for web-service hosts (optional)
+build_static.py      # writes docs/signals.json for the static site
 main.py              # CLI entry point (python main.py)
-serve.py             # dashboard entry point (python serve.py)
+serve.py             # live dashboard entry point (python serve.py)
+docs/                # GitHub Pages site (static)
+  index.html         # mobile-friendly dashboard, reads signals.json
+  signals.json       # generated data (committed by the Action)
+.github/workflows/
+  update.yml         # cron: rebuild signals.json every ~15 min
 stocks/
   config.py          # typed config loading
-  data.py            # yfinance data fetch
+  data.py            # yfinance data fetch (intraday-period clamping)
   indicators.py      # RSI / MACD / SMA / EMA
-  signals.py         # component scores + composite call
+  signals.py         # component scores, returns, entry advice, composite call
   engine.py          # fetch + evaluate the whole watchlist (shared)
+  serialize.py       # TickerSignal -> JSON row (shared by web + builder)
   report.py          # rich terminal report
   cli.py             # argument parsing + orchestration
   web.py             # Flask dashboard (page + /api/signals)

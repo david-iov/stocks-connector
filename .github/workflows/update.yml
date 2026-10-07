@@ -1,0 +1,46 @@
+name: Refresh signals
+
+on:
+  schedule:
+    # Every 15 min during US market hours (13:30–20:00 UTC ≈ 9:30–16:00 ET),
+    # plus a pre-open run. Cron is UTC; GitHub may delay scheduled runs slightly.
+    - cron: "*/15 13-20 * * 1-5"
+    - cron: "0 12 * * 1-5"
+  workflow_dispatch: {}   # allow manual "Run workflow" from the Actions tab
+
+# Let the job commit the refreshed signals.json back to the repo.
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-signals
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build signals.json
+        run: python build_static.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/signals.json
+          if git diff --cached --quiet; then
+            echo "No change in signals.json"
+          else
+            git commit -m "Refresh signals [skip ci]"
+            git push
+          fi
